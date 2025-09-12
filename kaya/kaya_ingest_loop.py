@@ -195,7 +195,7 @@ def main():
         except Exception as e:
             logger.error("[ERROR] Ingest failed in cycle #%d: %s", cycle, e)
 
-        sleep_secs = max(600, interval_minutes * 60)  # defensive ≥10 minutes
+        sleep_secs = max(600, interval_minutes * 60) 
         logger.info("Sleeping for %d seconds (interval %d min). Next cycle will re-load settings.", sleep_secs, interval_minutes)
         time.sleep(sleep_secs)
 
