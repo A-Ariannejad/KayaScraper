@@ -1,23 +1,41 @@
 {% load i18n %}
 <div class="filter">
   <h3>{{ title }}</h3>
+
   <form method="get" style="margin:0;">
-    {# keep all existing params except our own #}
+    {# keep all existing params except the two we control #}
     {% for key, value in cl.params.items %}
-      {% if key != spec.parameter_name %}
+      {% if key != spec.param_min and key != spec.param_max %}
         <input type="hidden" name="{{ key }}" value="{{ value }}">
       {% endif %}
     {% endfor %}
 
     <div style="display:flex; gap:.5rem; align-items:center;">
       <input type="text"
-             name="{{ spec.parameter_name }}"
-             value="{{ spec.value|default_if_none:'' }}"
-             placeholder="{{ spec.placeholder|default:'' }}"
-             style="width: 9.5em;" />
+             name="{{ spec.param_min }}"
+             value="{{ spec.min_value|default_if_none:'' }}"
+             placeholder="Min e.g. 250"
+             style="width:7.5em;" />
+      <span>–</span>
+      <input type="text"
+             name="{{ spec.param_max }}"
+             value="{{ spec.max_value|default_if_none:'' }}"
+             placeholder="Max e.g. 1000"
+             style="width:7.5em;" />
       <button type="submit" class="button">{% trans "Apply" %}</button>
-      <a href="?{% for k,v in cl.params.items %}{% if k != spec.parameter_name %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}"
+
+      {# Reset: drop just our two params #}
+      <a href="?{% for k,v in cl.params.items %}{% if k != spec.param_min and k != spec.param_max %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}"
          class="deletelink">{% trans "Reset" %}</a>
     </div>
+
+    {% if spec.min_value or spec.max_value %}
+      <div style="font-size:.85em; color:#666; margin-top:.25rem;">
+        {% trans "Current:" %}
+        {% if spec.min_value %}≥ {{ spec.min_value }}{% endif %}
+        {% if spec.min_value and spec.max_value %} &nbsp;–&nbsp;{% endif %}
+        {% if spec.max_value %}≤ {{ spec.max_value }}{% endif %}
+      </div>
+    {% endif %}
   </form>
 </div>
