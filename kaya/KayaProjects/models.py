@@ -28,6 +28,8 @@ class KayaProject(models.Model):
     jobs = models.ManyToManyField(Job, related_name="listings", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    have_we_made_a_bid_on_it = models.BooleanField(default=False, db_index=True, null=True, blank=True)
+
 
     class Meta:
         indexes = [
