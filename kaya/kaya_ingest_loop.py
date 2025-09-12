@@ -196,6 +196,10 @@ def main():
             logger.error("[ERROR] Ingest failed in cycle #%d: %s", cycle, e)
 
         sleep_secs = max(600, interval_minutes * 60) 
+        logger.info("Cycle #%d | ended at %s", cycle, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        setting = KayaSetting.load()
+        setting.last_updated = datetime.now()
+        setting.save()
         logger.info("Sleeping for %d seconds (interval %d min). Next cycle will re-load settings.", sleep_secs, interval_minutes)
         time.sleep(sleep_secs)
 
