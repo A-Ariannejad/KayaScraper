@@ -1,15 +1,18 @@
 from django.contrib import admin
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.db import models
 from django.utils.html import format_html
 from .models import KayaProject, Job
+import shlex
 
+# --- Inline for Jobs ---
 class JobsInline(admin.TabularInline):
     model = KayaProject.jobs.through
     extra = 0
     verbose_name = "Job"
     verbose_name_plural = "Jobs"
 
+# --- Budget filter ---
 class BudgetPresenceFilter(admin.SimpleListFilter):
     title = "Budget"
     parameter_name = "budget_presence"
@@ -33,6 +36,7 @@ class BudgetPresenceFilter(admin.SimpleListFilter):
             return qs.filter(budget_minimum__isnull=True, budget_maximum__isnull=True)
         return qs
 
+# --- Actions ---
 @admin.action(description="Mark selected as payment verified")
 def mark_verified(modeladmin, request, queryset):
     queryset.update(payment_verified=True)
@@ -41,6 +45,7 @@ def mark_verified(modeladmin, request, queryset):
 def mark_unverified(modeladmin, request, queryset):
     queryset.update(payment_verified=False)
 
+# --- Job Admin ---
 @admin.register(Job)
 class JobAdmin(admin.ModelAdmin):
     search_fields = ["name", "external_id"]
@@ -56,6 +61,7 @@ class JobAdmin(admin.ModelAdmin):
     def listings_count(self, obj):
         return obj._listings_count
 
+# --- KayaProject Admin ---
 @admin.register(KayaProject)
 class KayaProjectAdmin(admin.ModelAdmin):
     list_display = [
@@ -86,12 +92,17 @@ class KayaProjectAdmin(admin.ModelAdmin):
         "owner_city",
         "jobs__name",
     ]
+    search_help_text = (
+        "Tip: use `desc:` to search the description for multiple words. "
+        "Example: desc: elementor responsive \"pixel perfect\" -icons"
+    )
     date_hierarchy = "submit_date"
     ordering = ["-submit_date"]
-    list_select_related = []  
-    filter_horizontal = ["jobs"]  
+    list_select_related = []
+    filter_horizontal = ["jobs"]
     list_per_page = 50
     actions = [mark_verified, mark_unverified]
+    readonly_fields = ("created_at", "updated_at")
 
     fieldsets = (
         ("Identity", {
@@ -118,8 +129,6 @@ class KayaProjectAdmin(admin.ModelAdmin):
         }),
     )
 
-    readonly_fields = ("created_at", "updated_at")
-
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.prefetch_related("jobs")
@@ -140,7 +149,37 @@ class KayaProjectAdmin(admin.ModelAdmin):
             return "—"
         return format_html('<a href="{}" target="_blank" rel="noopener">Open</a>', obj.freelancer_url)
 
-from django.contrib import admin
+    def get_search_results(self, request, queryset, search_term):
+        """
+        Supports: desc: multi-term search in description.
+        All other terms use normal search_fields behavior.
+        """
+        if search_term.strip().lower().startswith("desc:"):
+            raw = search_term.split(":", 1)[1].strip()
+            try:
+                tokens = [t for t in shlex.split(raw) if t]
+            except ValueError:
+                tokens = [t for t in raw.split() if t]
+
+            must_include = []
+            must_exclude = []
+
+            for t in tokens:
+                if t.startswith("-") and len(t) > 1:
+                    must_exclude.append(t[1:])
+                else:
+                    must_include.append(t)
+
+            for t in must_include:
+                queryset = queryset.filter(description__icontains=t)
+            for t in must_exclude:
+                queryset = queryset.exclude(description__icontains=t)
+
+            return queryset, False
+
+        return super().get_search_results(request, queryset, search_term)
+
+# --- Admin branding ---
 admin.site.site_header = "Kaya Admin"
 admin.site.site_title = "Kaya Admin"
 admin.site.index_title = "Data Ingestion & Listings"
