@@ -1,20 +1,15 @@
-# app/admin.py
 from django.contrib import admin
 from django.db.models import Count
 from django.db import models
 from django.utils.html import format_html
 from .models import KayaProject, Job
 
-
-# -------- Inline / Many-to-Many helpers --------
 class JobsInline(admin.TabularInline):
     model = KayaProject.jobs.through
     extra = 0
     verbose_name = "Job"
     verbose_name_plural = "Jobs"
 
-
-# -------- Custom list filters --------
 class BudgetPresenceFilter(admin.SimpleListFilter):
     title = "Budget"
     parameter_name = "budget_presence"
@@ -38,8 +33,6 @@ class BudgetPresenceFilter(admin.SimpleListFilter):
             return qs.filter(budget_minimum__isnull=True, budget_maximum__isnull=True)
         return qs
 
-
-# -------- Actions --------
 @admin.action(description="Mark selected as payment verified")
 def mark_verified(modeladmin, request, queryset):
     queryset.update(payment_verified=True)
@@ -48,8 +41,6 @@ def mark_verified(modeladmin, request, queryset):
 def mark_unverified(modeladmin, request, queryset):
     queryset.update(payment_verified=False)
 
-
-# -------- Admins --------
 @admin.register(Job)
 class JobAdmin(admin.ModelAdmin):
     search_fields = ["name", "external_id"]
@@ -65,10 +56,8 @@ class JobAdmin(admin.ModelAdmin):
     def listings_count(self, obj):
         return obj._listings_count
 
-
 @admin.register(KayaProject)
 class KayaProjectAdmin(admin.ModelAdmin):
-    # List page
     list_display = [
         "title",
         "project_id",
@@ -99,12 +88,11 @@ class KayaProjectAdmin(admin.ModelAdmin):
     ]
     date_hierarchy = "submit_date"
     ordering = ["-submit_date"]
-    list_select_related = []  # (no FK fields here, but keep for consistency)
-    filter_horizontal = ["jobs"]  # nice M2M widget
+    list_select_related = []  
+    filter_horizontal = ["jobs"]  
     list_per_page = 50
     actions = [mark_verified, mark_unverified]
 
-    # Detail page layout
     fieldsets = (
         ("Identity", {
             "fields": ("project_id", "submit_date", "freelancer_url"),
@@ -134,10 +122,8 @@ class KayaProjectAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        # Prefetch jobs for faster changelist rendering with ManyToMany
         return qs.prefetch_related("jobs")
 
-    # Niceties for columns
     @admin.display(description="Budget")
     def budget_range(self, obj):
         if obj.budget_minimum is not None and obj.budget_maximum is not None:
