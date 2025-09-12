@@ -3,10 +3,10 @@ from .models import KayaSetting
 
 @admin.register(KayaSetting)
 class KayaSettingAdmin(admin.ModelAdmin):
-    list_display = ["interval_minutes", "selected_jobs_count"]
+    list_display = ["interval_minutes", "selected_jobs_count", "last_updated"]
     filter_horizontal = ["jobs"]
     readonly_fields = [] 
-    
+
     @admin.display(description="Selected jobs")
     def selected_jobs_count(self, obj):
         return obj.jobs.count()
