@@ -10,6 +10,7 @@ class KayaSetting(models.Model):
     )
     jobs = models.ManyToManyField(Job, related_name="kaya_settings", blank=True)
     singleton_enforcer = models.BooleanField(default=True, unique=True, editable=False)
+    last_updated = models.DateTimeField(auto_now=True) 
 
     def save(self, *args, **kwargs):
         self.pk = 1
